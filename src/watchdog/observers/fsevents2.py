@@ -78,6 +78,11 @@ from FSEvents import (
 logger = logging.getLogger(__name__)
 
 
+def decode_path(path):
+    if isinstance(path, bytes):
+        return path.decode('utf-8')
+    return path
+
 class FSEventsQueue(Thread):
     """ Low level FSEvents client. """
 
@@ -86,8 +91,9 @@ class FSEventsQueue(Thread):
         self._queue = queue.Queue()
         self._run_loop = None
 
-        if isinstance(path, bytes):
-            path = path.decode('utf-8')
+        # if isinstance(path, bytes):
+        #     path = path.decode('utf-8')
+        path = decode_path(path)
         self._path = unicodedata.normalize('NFC', path)
 
         context = None
@@ -122,7 +128,7 @@ class FSEventsQueue(Thread):
             CFRunLoopStop(self._run_loop)
 
     def _callback(self, streamRef, clientCallBackInfo, numEvents, eventPaths, eventFlags, eventIDs):
-        events = [NativeEvent(path, flags, _id) for path, flags, _id in
+        events = [NativeEvent(decode_path(path), flags, _id) for path, flags, _id in
                   zip(eventPaths, eventFlags, eventIDs)]
         logger.debug("FSEvents callback. Got %d events:" % numEvents)
         for e in events:
